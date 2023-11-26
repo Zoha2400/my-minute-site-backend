@@ -1,0 +1,22 @@
+{
+  "name": "back-minute-node",
+  "version": "1.0.0",
+  "description": "BackEnd for 1000projects",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index"
+  },
+  "keywords": [
+    "Backend"
+  ],
+  "author": "Zoha2400",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.18.2",
+    "nodemon": "^3.0.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0"
+  }
+}
