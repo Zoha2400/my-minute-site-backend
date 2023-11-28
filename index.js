@@ -1,6 +1,9 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
+import db from "./db.js";
+
+db.connect();
 
 const PORT = 3000;
 
@@ -15,6 +18,7 @@ const fakeBd = [
     style: "Неоклассика",
     cost: "7000000",
     data: ".......",
+    likes: 0,
     main_photo: "http://45.153.186.140:3009/static/img/jJngaek0.png",
     images: [
       {
@@ -47,6 +51,7 @@ const fakeBd = [
     style: "Неоклассика",
     cost: "7000000",
     data: "1232131",
+    likes: 0,
     main_photo: "http://45.153.186.140:3009/static/img/5eHTyBWZ.png",
     images: [
       {
@@ -65,7 +70,7 @@ const fakeBd = [
   },
 ];
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+app.use(express.json());
 /**
  * @swagger
  * /api/products:
@@ -82,10 +87,25 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
  * @swagger
- * /api/reg:
+ * /api/registrate:
  *   post:
- *     summary: Получить список недвижимости
- *     description: Получение списка всех объектов недвижимости
+ *     summary: Регистрация пользователя
+ *     description: Регистрация нового пользователя с использованием email и пароля.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email адрес пользователя.
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Пароль пользователя.
  *     responses:
  *       '200':
  *         description: Успешный ответ
@@ -96,6 +116,22 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/api/products", (req, res) => {
   res.json(fakeBd);
+});
+
+app.post("/api/registrate", async (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+
+  if (email && password) {
+    const newPerson = await db.query(
+      "INSERT INTO user_accounts (email, password) values ($1, $2) RETURNING *",
+      [email, password]
+    );
+    db.end();
+    res.send(newPerson);
+  } else {
+    res.status(400).send("Email and password are required");
+  }
 });
 
 app.listen(PORT, () => {
