@@ -2,6 +2,7 @@ import express from "express";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
 import db from "./db.js";
+import bcrypt from "bcrypt";
 
 db.connect();
 
@@ -123,12 +124,23 @@ app.post("/api/registrate", async (req, res) => {
   const password = req.body.password;
 
   if (email && password) {
-    const newPerson = await db.query(
-      "INSERT INTO user_accounts (email, password) values ($1, $2) RETURNING *",
-      [email, password]
+    const isExist = await db.query(
+      "SELECT * FROM user_accounts WHERE email = $1",
+      [email]
     );
-    db.end();
-    res.send(newPerson);
+
+    if (isExist.rows.length > 0) {
+      res.status(409).send("Email already exists");
+      db.end();
+    } else {
+      const hashPassword = await bcrypt.hash(password, 10);
+      const newPerson = await db.query(
+        "INSERT INTO user_accounts (email, password) values ($1, $2) RETURNING *",
+        [email, hashPassword]
+      );
+      db.end();
+      res.send(newPerson);
+    }
   } else {
     res.status(400).send("Email and password are required");
   }
