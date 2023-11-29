@@ -50,19 +50,44 @@ app.post("/api/registrate", async (req, res) => {
   }
 });
 
+//login - change
+app.post("/api/login", async (req, res) => {
+  const email = req.body.login;
+  const password = await bcrypt.hash(req.body.password, 10);
+  const checkPassword = await db.query(
+    "SELECT * FROM user_accounts WHERE email = $1",
+    [email]
+  );
+
+  if (
+    checkPassword.rows.length > 1 &&
+    password === checkPassword.rows[0].password
+  ) {
+    res.send(checkPassword.rows[0].token);
+  } else {
+    res.send(false);
+  }
+});
+
 //Add for admin panel
 app.post("/api/add", (req, res) => {
   res.send("add");
 });
 
 //Likes
-app.post("api/likes", async (req, res) => {
+app.post("/api/likes", async (req, res) => {
   const pk = req.body.pk;
   const state = req.body.state;
 
   if (state) {
     await db.query("SELECT * FROM products WHERE pk = $1", [pk]);
   }
+});
+
+//telegram
+app.post("/api/telegram", (req, res) => {
+  const { name, number, message } = req.body;
+  res.send("Name");
 });
 
 app.listen(PORT, () => {
@@ -85,6 +110,62 @@ app.listen(PORT, () => {
 /**
  * @swagger
  * /api/registrate:
+ *   post:
+ *     summary: Регистрация пользователя
+ *     description: Регистрация нового пользователя с использованием email и пароля.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email адрес пользователя.
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Пароль пользователя.
+ *     responses:
+ *       '200':
+ *         description: Успешный ответ
+ *         content:
+ *           application/json:
+ *             example: [{"pk": 1, "area": 392, ...}, {"pk": 2, "area": 123, ...}]
+ */
+/**
+ * @swagger
+ * /api/telegram:
+ *   post:
+ *     summary: Регистрация пользователя
+ *     description: Регистрация нового пользователя с использованием email и пароля.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email адрес пользователя.
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Пароль пользователя.
+ *     responses:
+ *       '200':
+ *         description: Успешный ответ
+ *         content:
+ *           application/json:
+ *             example: [{"pk": 1, "area": 392, ...}, {"pk": 2, "area": 123, ...}]
+ */
+/**
+ * @swagger
+ * /api/likes:
  *   post:
  *     summary: Регистрация пользователя
  *     description: Регистрация нового пользователя с использованием email и пароля.
