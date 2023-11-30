@@ -52,20 +52,34 @@ app.post("/api/registrate", async (req, res) => {
 
 //login - change
 app.post("/api/login", async (req, res) => {
-  const email = req.body.login;
-  const password = await bcrypt.hash(req.body.password, 10);
-  const checkPassword = await db.query(
-    "SELECT * FROM user_accounts WHERE email = $1",
-    [email]
-  );
+  const email = req.body.email;
+  const enteredPassword = req.body.password;
 
-  if (
-    checkPassword.rows.length > 1 &&
-    password === checkPassword.rows[0].password
-  ) {
-    res.send(checkPassword.rows[0].token);
-  } else {
-    res.send(false);
+  try {
+    const user = await db.query(
+      "SELECT * FROM user_accounts WHERE email = $1",
+      [email]
+    );
+
+    if (user.rows.length > 0) {
+      const storedHashedPassword = user.rows[0].password;
+
+      const passwordsMatch = await bcrypt.compare(
+        enteredPassword,
+        storedHashedPassword
+      );
+
+      if (passwordsMatch) {
+        res.send(user.rows[0].token);
+      } else {
+        res.send(false);
+      }
+    } else {
+      res.send(false);
+    }
+  } catch (error) {
+    console.error("Ошибка при выполнении запроса:", error);
+    res.status(500).send("Ошибка сервера");
   }
 });
 
@@ -76,11 +90,55 @@ app.post("/api/add", (req, res) => {
 
 //Likes
 app.post("/api/likes", async (req, res) => {
-  const pk = req.body.pk;
+  const id = req.body.id;
   const state = req.body.state;
+  const token = req.body.token;
 
-  if (state) {
-    await db.query("SELECT * FROM products WHERE pk = $1", [pk]);
+  const projectExists = await db.query("SELECT * FROM products WHERE pk = $1", [
+    id,
+  ]);
+
+  if (projectExists.rows.length > 0) {
+    try {
+      if (state) {
+        await db.query(
+          "INSERT INTO cart (id, token) values ($1, $2) RETURNING *",
+          [id, token]
+        );
+
+        await db.query("UPDATE products SET likes = likes + 1 WHERE pk = $1", [
+          id,
+        ]);
+      } else {
+        await db.query("DELETE FROM cart WHERE id = $1 AND token = $2", [
+          id,
+          token,
+        ]);
+
+        await db.query("UPDATE products SET likes = likes - 1 WHERE pk = $1", [
+          id,
+        ]);
+      }
+    } catch (error) {
+      console.error("Ошибка при выполнении", error);
+      res.status(500).send("Ошибка при работе сервера");
+    }
+  }
+});
+
+//cart
+app.post("/api/cart", async (req, res) => {
+  const token = req.body.token;
+
+  try {
+    const userCart = await db.query("SELECT * FROM cart WHERE token = $1", [
+      token,
+    ]);
+
+    res.json(userCart.rows);
+  } catch (error) {
+    console.error("Ошибка при выполнении маршрута:", error);
+    res.status(500).send("Ошибка сервера");
   }
 });
 
@@ -134,6 +192,59 @@ app.listen(PORT, () => {
  *         content:
  *           application/json:
  *             example: [{"pk": 1, "area": 392, ...}, {"pk": 2, "area": 123, ...}]
+ */
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     summary: Регистрация пользователя
+ *     description: Регистрация нового пользователя с использованием email и пароля.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email адрес пользователя.
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 description: Пароль пользователя.
+ *     responses:
+ *       '200':
+ *         description: Успешный ответ
+ *         content:
+ *           application/json:
+ *             example: [{"pk": 1, "area": 392, ...}, {"pk": 2, "area": 123, ...}]
+ */
+/**
+ * @swagger
+ * /api/cart:
+ *   post:
+ *     summary: Регистрация пользователя
+ *     description: Регистрация нового пользователя с использованием email и пароля.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 format: email
+ *                 description: Email адрес пользователя.
+ *                 example: "b4b6f81b-f176-4004-90db-ce7911834d44"
+ *     responses:
+ *       '200':
+ *         description: Успешный ответ
+ *         content:
+ *           application/json:
+ *             example: {"token": "b4b6f81b-f176-4004-90db-ce7911834d44"}
  */
 /**
  * @swagger
