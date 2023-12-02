@@ -3,6 +3,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger.js";
 import db from "./db.js";
 import bcrypt from "bcrypt";
+import cors from "cors";
 
 db.connect();
 
@@ -12,9 +13,10 @@ const app = express();
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(express.json());
+app.use(cors({ origin: "http://localhost:5173" }));
 
-app.get("/api/products", (req, res) => {
-  res.json(db.query("SELECT * FROM products"));
+app.get("/api/products", async (req, res) => {
+  res.json((await db.query("SELECT * FROM products")).rows);
 });
 
 //registration
@@ -41,8 +43,6 @@ app.post("/api/registrate", async (req, res) => {
         "SELECT * FROM user_accounts WHERE email = $1",
         [email]
       );
-      console.log(accountToken.rows[0]);
-      db.end();
       res.send(accountToken.rows[0]);
     }
   } else {
@@ -70,7 +70,7 @@ app.post("/api/login", async (req, res) => {
       );
 
       if (passwordsMatch) {
-        res.send(user.rows[0].token);
+        res.json({ token: user.rows[0].token, email: user.rows[0].email });
       } else {
         res.send(false);
       }
@@ -182,6 +182,7 @@ app.listen(PORT, () => {
  *                 type: string
  *                 format: email
  *                 description: Email адрес пользователя.
+ *                 example: "nurbek@gmail.com"
  *               password:
  *                 type: string
  *                 format: password
