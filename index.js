@@ -15,7 +15,33 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:5173" }));
 
-app.get("/api/products", async (req, res) => {
+app.post("/api/products", async (req, res) => {
+  const token = req.body?.token;
+
+  if (token) {
+    const userLikes = await db.query("SELECT id FROM cart WHERE token = $1", [
+      userToken,
+    ]);
+
+    const products = await db.query("SELECT * FROM products");
+
+    // Обновляем поле like для проектов, которые лайкнул пользователь
+    const updatedProducts = products.rows.map((product) => {
+      const likedProject = userLikes.rows.find(
+        (like) => product.pk === like.id
+      );
+
+      if (likedProject) {
+        product.like_state = true;
+      }
+
+      return product;
+    });
+
+    // Теперь updatedProducts содержит проекты с обновленным полем like
+    res.json(updatedProducts);
+  }
+
   res.json((await db.query("SELECT * FROM products")).rows);
 });
 
@@ -98,7 +124,12 @@ app.post("/api/likes", async (req, res) => {
     id,
   ]);
 
-  if (projectExists.rows.length > 0) {
+  const projectExistsToken = await db.query(
+    "SELECT * FROM cart WHERE token = $1 AND id = $2",
+    [token, id]
+  );
+
+  if (projectExists.rows.length > 0 && projectExistsToken.rows.length === 0) {
     try {
       if (state) {
         await db.query(
@@ -109,6 +140,8 @@ app.post("/api/likes", async (req, res) => {
         await db.query("UPDATE products SET likes = likes + 1 WHERE pk = $1", [
           id,
         ]);
+
+        res.json("{ок}");
       } else {
         await db.query("DELETE FROM cart WHERE id = $1 AND token = $2", [
           id,
@@ -118,6 +151,7 @@ app.post("/api/likes", async (req, res) => {
         await db.query("UPDATE products SET likes = likes - 1 WHERE pk = $1", [
           id,
         ]);
+        res.json("{ок}");
       }
     } catch (error) {
       console.error("Ошибка при выполнении", error);
@@ -131,9 +165,13 @@ app.post("/api/cart", async (req, res) => {
   const token = req.body.token;
 
   try {
-    const userCart = await db.query("SELECT * FROM cart WHERE token = $1", [
-      token,
-    ]);
+    const userCart = await db.query(
+      `SELECT projects.*
+      FROM projects
+      JOIN cart ON projects.pk = cart.id
+      WHERE cart.token = $1`,
+      [token]
+    );
 
     res.json(userCart.rows);
   } catch (error) {
