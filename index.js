@@ -16,33 +16,40 @@ app.use(express.json());
 app.use(cors({ origin: "http://localhost:5173" }));
 
 app.post("/api/products", async (req, res) => {
-  const token = req.body?.token;
+  const token = req.body.token;
+
+  console.log("Token:", token);
 
   if (token) {
-    const userLikes = await db.query("SELECT id FROM cart WHERE token = $1", [
-      userToken,
-    ]);
+    const products = await db.query(
+      `
+      SELECT
+      products.pk,
+      products.area,
+      products.size,
+      products.acres,
+      products.style,
+      products.cost,
+      products.data,
+      products.main_photo,
+      products.images,
+      products.likes,
+      CASE
+        WHEN cart.id IS NOT NULL THEN true
+        ELSE false
+      END AS like_state
+    FROM
+      products
+    LEFT JOIN
+      cart ON products.pk = cart.id AND cart.token = $1;
+    `,
+      [token]
+    );
 
-    const products = await db.query("SELECT * FROM products");
-
-    // Обновляем поле like для проектов, которые лайкнул пользователь
-    const updatedProducts = products.rows.map((product) => {
-      const likedProject = userLikes.rows.find(
-        (like) => product.pk === like.id
-      );
-
-      if (likedProject) {
-        product.like_state = true;
-      }
-
-      return product;
-    });
-
-    // Теперь updatedProducts содержит проекты с обновленным полем like
-    res.json(updatedProducts);
+    res.json(products.rows);
+  } else {
+    res.json((await db.query("SELECT * FROM products")).rows);
   }
-
-  res.json((await db.query("SELECT * FROM products")).rows);
 });
 
 //registration
@@ -129,7 +136,9 @@ app.post("/api/likes", async (req, res) => {
     [token, id]
   );
 
-  if (projectExists.rows.length > 0 && projectExistsToken.rows.length === 0) {
+  console.log(projectExists.rows.length, projectExistsToken.rows.length);
+
+  if (projectExists.rows.length > 0) {
     try {
       if (state) {
         await db.query(
@@ -166,10 +175,29 @@ app.post("/api/cart", async (req, res) => {
 
   try {
     const userCart = await db.query(
-      `SELECT projects.*
-      FROM projects
-      JOIN cart ON projects.pk = cart.id
-      WHERE cart.token = $1`,
+      `
+      SELECT
+        pk,
+        area,
+        size,
+        acres,
+        style,
+        cost,
+        data,
+        main_photo,
+        images,
+        likes,
+        CASE
+          WHEN products.pk = cart.id THEN true
+          ELSE false
+        END AS like_state
+      FROM
+        products
+      LEFT JOIN
+        cart ON products.pk = cart.id
+      WHERE
+        cart.token = $1; 
+    `,
       [token]
     );
 
