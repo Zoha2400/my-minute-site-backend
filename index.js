@@ -7,7 +7,6 @@ import cors from "cors";
 import fileUpload from "express-fileupload";
 import { fileURLToPath } from "url";
 import { dirname, extname, join } from "path";
-
 import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -222,9 +221,10 @@ app.post("/api/telegram", (req, res) => {
   res.send("Name");
 });
 
-app.post("/api/add", (req, res) => {
+app.post("/api/add", async (req, res) => {
   // Получаем файлы из запроса
-  const { main_photo, photos, ...data } = req.files;
+  const { main_photo, photos, ...smth } = req.files;
+  const { area, size, acres, style, cost, data } = req.body;
 
   // Генерируем уникальное имя для файла
   const generateFileName = () => {
@@ -233,24 +233,85 @@ app.post("/api/add", (req, res) => {
     )}`;
   };
 
+  const createWays = (randname) => {
+    return join(__dirname, "img", randname);
+  };
+
   // Сохраняем основную фотографию
-  const mainPhotoFileName = generateFileName();
-  main_photo.mv(join(__dirname, "img", mainPhotoFileName), (err) => {
+  const mainName = generateFileName();
+  main_photo.mv(createWays(mainName), (err) => {
     if (err) {
       console.error(err);
       return res.status(500).send(err);
     }
   });
 
-  photos.forEach((el) => {
-    const rand = generateFileName();
-    el.mv(join(__dirname, "img", rand), (err) => {
-      if (err) return res.status(500).json("Her");
-    });
-  });
+  const php = [];
 
-  return res.json(req.files);
+  if (Array.isArray(photos)) {
+    photos.forEach((el) => {
+      const rand = generateFileName();
+      php.push("http://localhost:3000/img/" + rand);
+      el.mv(createWays(rand), (err) => {
+        if (err) return res.status(500).json("Her");
+      });
+    });
+  } else {
+    const rand = generateFileName();
+
+    php.push("http://localhost:3000/img/" + rand);
+    photos.mv(createWays(rand), (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send(err);
+      }
+    });
+  }
+
+  const formDataForDB = {
+    area: area,
+    size: size,
+    acres: acres,
+    style: style,
+    cost: cost,
+    data: data,
+    main_photo: "http://localhost:3000/img/" + mainName,
+    photos: { photos: php },
+  };
+
+  await db.query(
+    "INSERT INTO products (area, size, acres, style, cost, data, main_photo, images, likes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+    [
+      +formDataForDB.area,
+      formDataForDB.size,
+      formDataForDB.acres,
+      formDataForDB.style,
+      formDataForDB.cost,
+      formDataForDB.data,
+      formDataForDB.main_photo,
+      JSON.stringify(formDataForDB.photos),
+      0,
+    ]
+  );
+
+  return res.json(formDataForDB);
 });
+
+app.get("/img/:filename", (req, res) => {
+  const filename = req.params.filename;
+  const filePath = join(__dirname, "img", filename);
+
+  // Отправка файла на фронтенд
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error("Error sending file:", err);
+      res.status(500).send("Error sending file");
+    } else {
+      console.log("File sent successfully:", filename);
+    }
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Listening on ${PORT}`);
 });
