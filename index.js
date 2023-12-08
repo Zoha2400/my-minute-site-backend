@@ -4,6 +4,14 @@ import swaggerSpec from "./swagger.js";
 import db from "./db.js";
 import bcrypt from "bcrypt";
 import cors from "cors";
+import fileUpload from "express-fileupload";
+import { fileURLToPath } from "url";
+import { dirname, extname, join } from "path";
+
+import fs from "fs";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 db.connect();
 
@@ -14,6 +22,11 @@ const app = express();
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:5173" }));
+app.use(
+  fileUpload({
+    limits: { fileSize: 1024 * 1024 * 1024 }, // Например, установим лимит в 50 МБ
+  })
+);
 
 app.post("/api/products", async (req, res) => {
   const token = req.body.token;
@@ -116,11 +129,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-//Add for admin panel
-app.post("/api/add", (req, res) => {
-  res.send("add");
-});
-
 //Likes
 app.post("/api/likes", async (req, res) => {
   const id = req.body.id;
@@ -214,6 +222,35 @@ app.post("/api/telegram", (req, res) => {
   res.send("Name");
 });
 
+app.post("/api/add", (req, res) => {
+  // Получаем файлы из запроса
+  const { main_photo, photos, ...data } = req.files;
+
+  // Генерируем уникальное имя для файла
+  const generateFileName = () => {
+    return `${Date.now()}_${Math.floor(Math.random() * 1000)}${extname(
+      main_photo.name
+    )}`;
+  };
+
+  // Сохраняем основную фотографию
+  const mainPhotoFileName = generateFileName();
+  main_photo.mv(join(__dirname, "img", mainPhotoFileName), (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send(err);
+    }
+  });
+
+  photos.forEach((el) => {
+    const rand = generateFileName();
+    el.mv(join(__dirname, "img", rand), (err) => {
+      if (err) return res.status(500).json("Her");
+    });
+  });
+
+  return res.json(req.files);
+});
 app.listen(PORT, () => {
   console.log(`Listening on ${PORT}`);
 });
