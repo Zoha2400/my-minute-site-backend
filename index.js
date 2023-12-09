@@ -53,7 +53,9 @@ app.post("/api/products", async (req, res) => {
     FROM
       products
     LEFT JOIN
-      cart ON products.pk = cart.id AND cart.token = $1;
+      cart ON products.pk = cart.id AND cart.token = $1
+    ORDER BY
+      products.pk
     `,
       [token]
     );
@@ -203,7 +205,7 @@ app.post("/api/cart", async (req, res) => {
       LEFT JOIN
         cart ON products.pk = cart.id
       WHERE
-        cart.token = $1; 
+        cart.token = $1
     `,
       [token]
     );
@@ -242,7 +244,7 @@ app.post("/api/add", async (req, res) => {
   main_photo.mv(createWays(mainName), (err) => {
     if (err) {
       console.error(err);
-      return res.status(500).send(err);
+      return res.status(500).json("");
     }
   });
 
@@ -253,7 +255,7 @@ app.post("/api/add", async (req, res) => {
       const rand = generateFileName();
       php.push("http://localhost:3000/img/" + rand);
       el.mv(createWays(rand), (err) => {
-        if (err) return res.status(500).json("Her");
+        if (err) return res.status(500).json("");
       });
     });
   } else {
@@ -294,7 +296,7 @@ app.post("/api/add", async (req, res) => {
     ]
   );
 
-  return res.json(formDataForDB);
+  return res.json("true");
 });
 
 app.get("/img/:filename", (req, res) => {
