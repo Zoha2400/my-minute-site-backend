@@ -7,6 +7,7 @@ import cors from "cors";
 import fileUpload from "express-fileupload";
 import { fileURLToPath } from "url";
 import { dirname, extname, join } from "path";
+import TelegramBot from "node-telegram-bot-api";
 import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +16,39 @@ const __dirname = dirname(__filename);
 db.connect();
 
 const PORT = 3000;
+
+const token = "6986876392:AAG7M6hAmpdPuE3-SxrNV9hgTa2qMDAu4tg";
+const bot = new TelegramBot(token, { polling: true });
+
+bot.setMyCommands([
+  { command: "/start", description: "Запустить бота" },
+  { command: "/info", description: "Информация о боте" },
+  { command: "/hello", description: "Сказать Привет" },
+]);
+
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const chatTitle = msg.chat.title;
+  const text = msg.text;
+  const nameOfUser = msg.from.first_name;
+
+  console.log(msg);
+
+  // bot.sendMessage(chatId, 'Your message is ' + text);
+  switch (text) {
+    case "/start":
+      await bot.sendMessage(chatId, `Привет ` + nameOfUser + "!");
+      break;
+    case "/start@zmFirstBotonJs_bot":
+      await bot.sendMessage(chatId, `Привет ` + chatTitle + "!");
+      break;
+    case "/hello":
+      await bot.sendMessage(chatId, "Ты пидорас, " + nameOfUser + "!");
+      break;
+    default:
+      await bot.sendMessage(chatId, "Я тебя не понимаю..");
+  }
+});
 
 const app = express();
 
@@ -220,6 +254,12 @@ app.post("/api/cart", async (req, res) => {
 //telegram
 app.post("/api/telegram", (req, res) => {
   const { name, number, message } = req.body;
+  const chatId = -4062555774;
+
+  bot.sendMessage(
+    chatId,
+    `Имя: ${name}\nНомер телефона: ${number}\nСообщение: ${message}`
+  );
   res.send("Name");
 });
 
@@ -426,14 +466,18 @@ app.listen(PORT, () => {
  *           schema:
  *             type: object
  *             properties:
- *               email:
+ *               name:
  *                 type: string
  *                 format: email
- *                 description: Email адрес пользователя.
- *               password:
+ *                 description: Имя пользователя.
+ *               number:
  *                 type: string
- *                 format: password
- *                 description: Пароль пользователя.
+ *                 format: number
+ *                 description: Номер телефона.
+ *               message:
+ *                 type: string
+ *                 format: text
+ *                 description: Текст сообщения.
  *     responses:
  *       '200':
  *         description: Успешный ответ
