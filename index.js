@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { dirname, extname, join } from "path";
 import TelegramBot from "node-telegram-bot-api";
 import fs from "fs";
+import { URL } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -253,7 +254,11 @@ app.post("/api/cart", async (req, res) => {
 
 //telegram
 app.post("/api/telegram", (req, res) => {
-  const { name, number, message } = req.body;
+  const name = req.body.name;
+  const number = req.body.number;
+  const message = req.body.message;
+
+  // const { name, number, message } = req.body;
   const chatId = -4062555774;
 
   bot.sendMessage(
@@ -333,6 +338,106 @@ app.post("/api/add", async (req, res) => {
       formDataForDB.main_photo,
       JSON.stringify(formDataForDB.photos),
       0,
+    ]
+  );
+
+  return res.json("true");
+});
+
+app.post("/api/change", async (req, res) => {
+  const { main_photo, photos, ...smth } = req.files;
+  const { pk, area, size, acres, style, cost, data } = req.body;
+
+  // Предположим, что db.query возвращает объект, содержащий результат запроса
+  const mainPhotoResult = await db.query(
+    "SELECT main_photo FROM products WHERE pk = $1",
+    [pk]
+  );
+  const imagesResult = await db.query(
+    "SELECT images FROM products WHERE pk = $1",
+    [pk]
+  );
+
+  // Получаем значения main_photo и images из результатов запросов
+  const mainPhoto = mainPhotoResult.rows[0].main_photo;
+  const images = imagesResult.rows[0].images;
+
+  // Используем new URL для создания объекта URL
+  const mainPhotoUrl = new URL(mainPhoto);
+  const imagesUrl = new URL(images);
+
+  // Получаем пути
+  const mphDel = mainPhotoUrl.pathname;
+  const phDel = imagesUrl.pathname;
+
+  // Генерируем уникальное имя для файла
+  const generateFileName = () => {
+    return `${Date.now()}_${Math.floor(Math.random() * 1000)}${extname(
+      main_photo.name
+    )}`;
+  };
+
+  const createWays = (randname) => {
+    return join(__dirname, "img", randname);
+  };
+
+  // Сохраняем основную фотографию
+  const mainName = generateFileName();
+  main_photo.mv(createWays(mainName), (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json("");
+    }
+  });
+
+  const php = [];
+
+  if (Array.isArray(photos)) {
+    photos.forEach((el) => {
+      const rand = generateFileName();
+      php.push("http://localhost:3000/img/" + rand);
+      el.mv(createWays(rand), (err) => {
+        if (err) return res.status(500).json("");
+      });
+    });
+  } else {
+    const rand = generateFileName();
+
+    php.push("http://localhost:3000/img/" + rand);
+    photos.mv(createWays(rand), (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send(err);
+      }
+    });
+  }
+
+  const formDataForDB = {
+    area: area,
+    size: size,
+    acres: acres,
+    style: style,
+    cost: cost,
+    data: data,
+    main_photo: "http://localhost:3000/img/" + mainName,
+    photos: { photos: php },
+  };
+
+  await db.query(
+    "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    [
+      +formDataForDB.area,
+      formDataForDB.size,
+      formDataForDB.acres,
+      formDataForDB.style,
+      formDataForDB.cost,
+      formDataForDB.data,
+      formDataForDB.main_photo,
+      JSON.stringify(formDataForDB.photos),
+      0,
+      pk,
+      // Добавьте условие WHERE, чтобы указать, какую запись обновлять.
+      // Пример: "id = $10" или что-то подобное, в зависимости от структуры вашей таблицы.
     ]
   );
 
