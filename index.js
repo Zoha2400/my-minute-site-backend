@@ -442,16 +442,125 @@ app.post("/api/change/data", async (req, res) => {
   return res.json("true");
 });
 
+//main_photo
 app.post("/api/change/main_photo", async (req, res) => {
-  const main_photo = req.body.main_photo;
+  const main_photo = req.files.main_photo;
   const pk = req.body.pk;
+
+  const oldMpHResult = await db.query(
+    "SELECT main_photo FROM products WHERE pk = $1",
+    [pk]
+  );
+  const oldMpH = oldMpHResult.rows[0].main_photo;
+
+  const parsedUrl = new URL(oldMpH);
+
+  const pathH = parsedUrl.pathname; // Это даст вам /img/1702104101996_811.jpg
+
+  const generateFileName = () => {
+    return `${Date.now()}_${Math.floor(Math.random() * 1000)}${extname(
+      main_photo.name
+    )}`;
+  };
+
+  const createWays = (randname) => {
+    return join(__dirname, "img", randname);
+  };
+
+  // Сохраняем основную фотографию
+  const mainName = generateFileName();
+  main_photo.mv(createWays(mainName), (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json("");
+    }
+  });
 
   await db.query(
     // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
     "UPDATE products SET main_photo = $1 WHERE pk = $2",
 
-    [main_photo, pk]
+    ["http://localhost:3000/img/" + mainName, pk]
   );
+
+  fs.unlink(join(__dirname, pathH), (err) => {
+    if (err) {
+      console.error(`Ошибка при удалении файла: ${err}`);
+    } else {
+      console.log(`Файл ${join(__dirname, pathH)} успешно удален`);
+    }
+  });
+
+  return res.json("true");
+});
+
+app.post("/api/change/photos", async (req, res) => {
+  const photos = req.files.photos;
+  const pk = req.body.pk;
+
+  const oldMpHResult = await db.query(
+    "SELECT images FROM products WHERE pk = $1",
+    [pk]
+  );
+  const oldMpH = oldMpHResult.rows[0].images.photos;
+
+  const pathH = [];
+
+  for (let i = 0; i < oldMpH.length; i++) {
+    const oldMpHH = new URL(oldMpH[i]);
+    pathH.push(oldMpHH.pathname);
+  }
+
+  // const pathH = parsedUrl.pathname; // Это даст вам /img/1702104101996_811.jpg
+
+  const generateFileName = () => {
+    return `${Date.now()}_${Math.floor(Math.random() * 1000)}${extname(
+      photos[0].name
+    )}`;
+  };
+
+  const createWays = (randname) => {
+    return join(__dirname, "img", randname);
+  };
+
+  const php = [];
+
+  if (Array.isArray(photos)) {
+    photos.forEach((el) => {
+      const rand = generateFileName();
+      php.push("http://localhost:3000/img/" + rand);
+      el.mv(createWays(rand), (err) => {
+        if (err) return res.status(500).json("");
+      });
+    });
+  } else {
+    const rand = generateFileName();
+
+    php.push("http://localhost:3000/img/" + rand);
+    photos.mv(createWays(rand), (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send(err);
+      }
+    });
+  }
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET images = $1 WHERE pk = $2",
+
+    [{ photos: php }, pk]
+  );
+
+  for (let i = 0; i < pathH.length; i++) {
+    fs.unlink(join(__dirname, pathH[i]), (err) => {
+      if (err) {
+        console.error(`Ошибка при удалении файла: ${err}`);
+      } else {
+        console.log(`Файл ${join(__dirname, pathH[i])} успешно удален`);
+      }
+    });
+  }
 
   return res.json("true");
 });
