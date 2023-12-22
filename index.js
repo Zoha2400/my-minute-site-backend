@@ -372,6 +372,89 @@ app.post("/api/change/area", async (req, res) => {
 
   return res.json("true");
 });
+app.post("/api/change/size", async (req, res) => {
+  const size = req.body.size;
+  const pk = req.body.pk;
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET size = $1 WHERE pk = $2",
+
+    [size, pk]
+  );
+
+  return res.json("true");
+});
+
+app.post("/api/change/acres", async (req, res) => {
+  const acres = req.body.acres;
+  const pk = req.body.pk;
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET acres = $1 WHERE pk = $2",
+
+    [acres, pk]
+  );
+
+  return res.json("true");
+});
+
+app.post("/api/change/style", async (req, res) => {
+  const style = req.body.style;
+  const pk = req.body.pk;
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET style = $1 WHERE pk = $2",
+
+    [style, pk]
+  );
+
+  return res.json("true");
+});
+
+app.post("/api/change/cost", async (req, res) => {
+  const cost = req.body.cost;
+  const pk = req.body.pk;
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET cost = $1 WHERE pk = $2",
+
+    [cost, pk]
+  );
+
+  return res.json("true");
+});
+
+app.post("/api/change/data", async (req, res) => {
+  const data = req.body.data;
+  const pk = req.body.pk;
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET data = $1 WHERE pk = $2",
+
+    [data, pk]
+  );
+
+  return res.json("true");
+});
+
+app.post("/api/change/main_photo", async (req, res) => {
+  const main_photo = req.body.main_photo;
+  const pk = req.body.pk;
+
+  await db.query(
+    // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
+    "UPDATE products SET main_photo = $1 WHERE pk = $2",
+
+    [main_photo, pk]
+  );
+
+  return res.json("true");
+});
 
 app.get("/img/:filename", (req, res) => {
   const filename = req.params.filename;
