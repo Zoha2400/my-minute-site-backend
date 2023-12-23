@@ -354,7 +354,7 @@ app.post("/api/telegram/offer", (req, res) => {
 
   bot.sendMessage(
     chatId,
-    `Имя: ${name}\nНомер телефона: ${number}\nСообщение: ${message}`
+    `Оставлена заявка на проект: ${pk}\nИмя: ${name}\nНомер телефона: ${number}`
   );
   res.send("Name");
 });
@@ -506,9 +506,11 @@ app.post("/api/change/photos", async (req, res) => {
 
   const pathH = [];
 
-  for (let i = 0; i < oldMpH.length; i++) {
-    const oldMpHH = new URL(oldMpH[i]);
-    pathH.push(oldMpHH.pathname);
+  if (oldMpH !== undefined) {
+    for (let i = 0; i < oldMpH.length; i++) {
+      const oldMpHH = new URL(oldMpH[i]);
+      pathH.push(oldMpHH.pathname);
+    }
   }
 
   // const pathH = parsedUrl.pathname; // Это даст вам /img/1702104101996_811.jpg
@@ -552,14 +554,16 @@ app.post("/api/change/photos", async (req, res) => {
     [{ photos: php }, pk]
   );
 
-  for (let i = 0; i < pathH.length; i++) {
-    fs.unlink(join(__dirname, pathH[i]), (err) => {
-      if (err) {
-        console.error(`Ошибка при удалении файла: ${err}`);
-      } else {
-        console.log(`Файл ${join(__dirname, pathH[i])} успешно удален`);
-      }
-    });
+  if (pathH.length > 0) {
+    for (let i = 0; i < pathH.length; i++) {
+      fs.unlink(join(__dirname, pathH[i]), (err) => {
+        if (err) {
+          console.error(`Ошибка при удалении файла: ${err}`);
+        } else {
+          console.log(`Файл ${join(__dirname, pathH[i])} успешно удален`);
+        }
+      });
+    }
   }
 
   return res.json("true");
