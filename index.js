@@ -97,7 +97,9 @@ app.post("/api/products", async (req, res) => {
 
     res.json(products.rows);
   } else {
-    res.json((await db.query("SELECT * FROM products")).rows);
+    res.json(
+      (await db.query("SELECT * FROM products ORDER BY products.pk")).rows
+    );
   }
 });
 
@@ -495,7 +497,7 @@ app.post("/api/change/main_photo", async (req, res) => {
 });
 
 app.post("/api/change/photos", async (req, res) => {
-  const photos = req.files.photos;
+  const photos = req.files?.photos;
   const pk = req.body.pk;
 
   const oldMpHResult = await db.query(
