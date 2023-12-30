@@ -14,6 +14,8 @@ import { URL } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const pth = "";
+
 db.connect();
 
 const PORT = 3000;
@@ -55,7 +57,7 @@ const app = express();
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors());
 app.use(
   fileUpload({
     limits: { fileSize: 1024 * 1024 * 1024 }, // Например, установим лимит в 50 МБ
@@ -116,7 +118,6 @@ app.post("/api/registrate", async (req, res) => {
 
     if (isExist.rows.length > 0) {
       res.status(409).send("Email already exists");
-      db.end();
     } else {
       const hashPassword = await bcrypt.hash(password, 10);
       const newPerson = await db.query(
@@ -482,7 +483,7 @@ app.post("/api/change/main_photo", async (req, res) => {
     // "UPDATE products SET area = $1, size = $2, acres = $3, style = $4, cost = $5, data = $6, main_photo = $7, images = $8, likes = $9 WHERE pk = $10",
     "UPDATE products SET main_photo = $1 WHERE pk = $2",
 
-    ["http://localhost:3000/img/" + mainName, pk]
+    [`${pth}/img/` + mainName, pk]
   );
 
   fs.unlink(join(__dirname, pathH), (err) => {
@@ -532,7 +533,7 @@ app.post("/api/change/photos", async (req, res) => {
   if (Array.isArray(photos)) {
     photos.forEach((el) => {
       const rand = generateFileName();
-      php.push("http://localhost:3000/img/" + rand);
+      php.push(`${pth}/img/` + rand);
       el.mv(createWays(rand), (err) => {
         if (err) return res.status(500).json("");
       });
@@ -540,7 +541,7 @@ app.post("/api/change/photos", async (req, res) => {
   } else {
     const rand = generateFileName();
 
-    php.push("http://localhost:3000/img/" + rand);
+    php.push(`${pth}/img/` + rand);
     photos.mv(createWays(rand), (err) => {
       if (err) {
         console.error(err);
