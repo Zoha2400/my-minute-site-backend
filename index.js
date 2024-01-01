@@ -17,7 +17,6 @@ const __dirname = dirname(__filename);
 const pth = "https://b8a2-84-54-122-30.ngrok-free.app";
 
 
-
 const PORT = 3000;
 
 const token = "6986876392:AAG7M6hAmpdPuE3-SxrNV9hgTa2qMDAu4tg";
