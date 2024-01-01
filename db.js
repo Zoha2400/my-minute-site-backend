@@ -9,4 +9,12 @@ const client = new Client({
   database: "hundproj",
 });
 
+client.connect()
+  .then(() => {
+    console.log("Connected to the database");
+  })
+  .catch((err) => {
+    console.error("Error connecting to the database:", err);
+  });
+
 export default client;

@@ -14,9 +14,9 @@ import { URL } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const pth = "";
+const pth = "https://b8a2-84-54-122-30.ngrok-free.app";
 
-db.connect();
+
 
 const PORT = 3000;
 
