@@ -4,12 +4,13 @@ const { Client } = pkg;
 const client = new Client({
   user: "postgres",
   password: "05350535",
-  host: "89.111.153.226",
+  host: "localhost",
   port: 5432,
   database: "hundproj",
 });
 
-client.connect()
+client
+  .connect()
   .then(() => {
     console.log("Connected to the database");
   })
