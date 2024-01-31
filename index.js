@@ -14,8 +14,7 @@ import { URL } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const pth = "https://b8a2-84-54-122-30.ngrok-free.app";
-
+const pth = "http://89.111.153.226";
 
 const PORT = 3000;
 
@@ -284,7 +283,7 @@ app.post("/api/add", async (req, res) => {
   if (Array.isArray(photos)) {
     photos.forEach((el) => {
       const rand = generateFileName();
-      php.push("http://localhost:3000/img/" + rand);
+      php.push(`${pth}/img/` + rand);
       el.mv(createWays(rand), (err) => {
         if (err) return res.status(500).json("");
       });
@@ -292,7 +291,7 @@ app.post("/api/add", async (req, res) => {
   } else {
     const rand = generateFileName();
 
-    php.push("http://localhost:3000/img/" + rand);
+    php.push(`${pth}/img/` + rand);
     photos.mv(createWays(rand), (err) => {
       if (err) {
         console.error(err);
@@ -308,7 +307,7 @@ app.post("/api/add", async (req, res) => {
     style: style,
     cost: cost,
     data: data,
-    main_photo: "http://localhost:3000/img/" + mainName,
+    main_photo: `${pth}/img/` + mainName,
     photos: { photos: php },
   };
 
