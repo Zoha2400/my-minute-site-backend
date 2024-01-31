@@ -15,7 +15,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const pth = "http://89.111.153.226";
-
 const PORT = 3000;
 
 const token = "6986876392:AAG7M6hAmpdPuE3-SxrNV9hgTa2qMDAu4tg";
