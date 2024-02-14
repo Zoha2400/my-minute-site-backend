@@ -15,6 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const pth = "http://89.111.153.226";
+
 const PORT = 3000;
 
 const token = "6986876392:AAG7M6hAmpdPuE3-SxrNV9hgTa2qMDAu4tg";
@@ -80,14 +81,21 @@ app.post("/api/products", async (req, res) => {
       products.main_photo,
       products.images,
       products.likes,
+      products.rank,
       CASE
         WHEN cart.id IS NOT NULL THEN true
         ELSE false
-      END AS like_state
+      END AS like_state,
+      CASE
+        WHEN rank.id IS NOT NULL THEN true
+        ELSE false
+      END AS rank_state
     FROM
       products
     LEFT JOIN
       cart ON products.pk = cart.id AND cart.token = $1
+    LEFT JOIN
+      rank ON products.pk = rank.id AND rank.token = $1
     ORDER BY
       products.pk
     `,
@@ -213,6 +221,53 @@ app.post("/api/likes", async (req, res) => {
   }
 });
 
+app.post("/api/rank", async (req, res) => {
+  const id = req.body.id;
+  const state = req.body.state;
+  const token = req.body.token;
+
+  const projectExists = await db.query("SELECT * FROM products WHERE pk = $1", [
+    id,
+  ]);
+
+  const projectExistsToken = await db.query(
+    "SELECT * FROM rank WHERE token = $1 AND id = $2",
+    [token, id]
+  );
+
+  console.log(projectExists.rows.length, projectExistsToken.rows.length);
+
+  if (projectExists.rows.length > 0) {
+    try {
+      if (state) {
+        await db.query(
+          "INSERT INTO rank (id, token) values ($1, $2) RETURNING *",
+          [id, token]
+        );
+
+        await db.query("UPDATE products SET rank = rank + 1 WHERE pk = $1", [
+          id,
+        ]);
+
+        res.json("{ок}");
+      } else {
+        await db.query("DELETE FROM rank WHERE id = $1 AND token = $2", [
+          id,
+          token,
+        ]);
+
+        await db.query("UPDATE products SET rank = rank - 1 WHERE pk = $1", [
+          id,
+        ]);
+        res.json("{ок}");
+      }
+    } catch (error) {
+      console.error("Ошибка при выполнении", error);
+      res.status(500).send("Ошибка при работе сервера");
+    }
+  }
+});
+
 //cart
 app.post("/api/cart", async (req, res) => {
   const token = req.body.token;
@@ -231,6 +286,11 @@ app.post("/api/cart", async (req, res) => {
         main_photo,
         images,
         likes,
+        rank,
+        CASE
+          WHEN products.pk = rank.id THEN true
+          ELSE false
+        END AS rank_state,
         CASE
           WHEN products.pk = cart.id THEN true
           ELSE false
@@ -239,6 +299,8 @@ app.post("/api/cart", async (req, res) => {
         products
       LEFT JOIN
         cart ON products.pk = cart.id
+      LEFT JOIN
+        rank ON products.pk = rank.id AND rank.token = $1
       WHERE
         cart.token = $1
     `,
