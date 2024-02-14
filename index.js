@@ -33,8 +33,6 @@ bot.on("message", async (msg) => {
   const text = msg.text;
   const nameOfUser = msg.from.first_name;
 
-  console.log(msg);
-
   // bot.sendMessage(chatId, 'Your message is ' + text);
   switch (text) {
     case "/start":
@@ -42,9 +40,6 @@ bot.on("message", async (msg) => {
       break;
     case "/start@zmFirstBotonJs_bot":
       await bot.sendMessage(chatId, `Привет ` + chatTitle + "!");
-      break;
-    case "/hello":
-      await bot.sendMessage(chatId, "Ты пидорас, " + nameOfUser + "!");
       break;
     default:
       await bot.sendMessage(chatId, "Я тебя не понимаю..");
